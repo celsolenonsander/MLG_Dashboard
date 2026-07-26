@@ -21,18 +21,18 @@ Dashboard interativo para exibição de indicadores e alertas empresariais, inte
 text
 
 /
-├── index.html                 # Página principal
+├── index.html                     # Página principal do dashboard
 ├── css/
-│   ├── base.css               # Variáveis, reset, estilos globais e modal
-│   ├── cards.css              # Estilos dos indicadores (cards)
-│   ├── avisos.css             # Estilos dos alertas
-│   └── print.css              # Estilos para impressão/PDF
+│   ├── base.css                   # Variáveis CSS, reset, estilos globais e modal de ajuda
+│   ├── cards.css                  # Estilos dos indicadores (cards)
+│   ├── avisos.css                 # Estilos dos alertas e avisos
+│   └── print.css                  # Estilos específicos para impressão e geração de PDF
 ├── js/
-│   ├── app.js                 # Classe principal do dashboard
-│   ├── bridge.js              # Ponte de comunicação com Delphi
-│   └── theme.js               # Gerenciador de tema claro/escuro
+│   ├── app.js                     # Classe principal do DashboardApp (lógica e renderização)
+│   ├── bridge.js                  # Ponte de comunicação com Delphi (via console.log)
+│   └── theme.js                   # Gerenciador de tema claro/escuro com persistência
 └── data/
-    └── data.js                # Dados de exemplo (cards e avisos)
+    └── data.js                    # Dados de exemplo (cards e avisos) em formato JSON
 
 ⚙️ Funcionalidades Principais
 📈 Indicadores (Cards)
