@@ -1,0 +1,302 @@
+/* css/print.css */
+/* ============================================
+   PRINT.CSS - Estilos específicos para PDF/Imprenssão
+   ============================================ */
+
+@media print {
+    /* ============================================
+       RESET GERAL - FORÇA CORES SÓLIDAS
+       ============================================ */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        animation: none !important;
+        transition: none !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    
+    /* ============================================
+       BODY - CORES SÓLIDAS
+       ============================================ */
+    body {
+        background: white !important;
+        color: #1a1a2e !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: 100vh !important;
+    }
+    
+    /* ============================================
+       CONTAINER DO DASHBOARD
+       ============================================ */
+    .dashboard-container {
+        max-width: 100% !important;
+        padding: 10mm 12mm !important;
+        margin: 0 auto !important;
+        background: white !important;
+        min-height: 100vh !important;
+        gap: 20px !important;
+    }
+    
+    /* ============================================
+       CABEÇALHO DAS SEÇÕES
+       ============================================ */
+    .section-header {
+        border-bottom: 2px solid #e9ecef !important;
+        margin-bottom: 12px !important;
+        padding-bottom: 8px !important;
+    }
+    
+    .section-header-left h2 {
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        color: #1a1a2e !important;
+    }
+    
+    .section-header-left h2 i {
+        color: #6a6aff !important;
+    }
+    
+    .badge-count,
+    .badge-alert {
+        background: #f8f9fa !important;
+        color: #495057 !important;
+        border: 1px solid #dee2e6 !important;
+        font-size: 10px !important;
+        padding: 3px 12px !important;
+        border-radius: 12px !important;
+    }
+    
+    /* ============================================
+       CARDS
+       ============================================ */
+    .cards-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 10px !important;
+        padding-bottom: 8px !important;
+    }
+    
+    .dash-card {
+        background: #f8f9fa !important;
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 10px !important;
+        padding: 12px 14px !important;
+        min-height: 90px !important;
+        box-shadow: none !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+    
+    .dash-card::before {
+        display: none !important;
+    }
+    
+    .card-icon {
+        background: var(--card-color, #6a6aff) !important;
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+        color: white !important;
+        font-size: 13px !important;
+        box-shadow: none !important;
+    }
+    
+    .card-title {
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        color: #6c757d !important;
+    }
+    
+    .card-value {
+        font-size: 18px !important;
+        font-weight: 900 !important;
+        color: #1a1a2e !important;
+        line-height: 1.2 !important;
+    }
+    
+    .card-text {
+        font-size: 10px !important;
+        color: #6c757d !important;
+    }
+    
+    /* ============================================
+       AVISOS
+       ============================================ */
+    .avisos-section {
+        margin-top: 8px !important;
+        padding-top: 8px !important;
+        border-top: 1px solid #e9ecef !important;
+    }
+    
+    .avisos-list {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 5px !important;
+        padding-bottom: 4px !important;
+    }
+    
+    .aviso-item {
+        background: #f8f9fa !important;
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        border-left: 4px solid var(--aviso-color, #6a6aff) !important;
+        border-radius: 8px !important;
+        padding: 8px 12px !important;
+        min-height: 60px !important;
+        box-shadow: none !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+    
+    .aviso-item.urgente {
+        background: #fff5f5 !important;
+        background-color: #fff5f5 !important;
+        border-left-color: #e74c3c !important;
+    }
+    
+    .aviso-icon {
+        width: 22px !important;
+        height: 22px !important;
+        border-radius: 6px !important;
+        background: var(--aviso-color, #6a6aff) !important;
+        color: white !important;
+        font-size: 10px !important;
+        box-shadow: none !important;
+    }
+    
+    .aviso-item.urgente .aviso-icon {
+        background: #e74c3c !important;
+    }
+    
+    .aviso-mensagem {
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        color: #1a1a2e !important;
+    }
+    
+    .aviso-qtd-destaque {
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        padding: 0 8px !important;
+        border-radius: 4px !important;
+        min-width: 24px !important;
+        text-align: center !important;
+        color: var(--aviso-color, #6a6aff) !important;
+        background: rgba(106, 106, 255, 0.1) !important;
+        border: 1px solid rgba(106, 106, 255, 0.15) !important;
+    }
+    
+    .aviso-item.urgente .aviso-qtd-destaque {
+        color: #e74c3c !important;
+        background: rgba(231, 76, 60, 0.1) !important;
+        border-color: rgba(231, 76, 60, 0.15) !important;
+    }
+    
+    .aviso-descricao-texto {
+        font-size: 11px !important;
+        color: #6c757d !important;
+    }
+    
+    /* ============================================
+       ESCONDER ELEMENTOS INDESEJÁVEIS
+       ============================================ */
+    .section-header-right,
+    .card-acoes,
+    .aviso-acoes,
+    .refresh-btn,
+    .btn-pdf,
+    .btn-help,
+    .btn-reset,
+    .btn-gear,
+    .theme-toggle,
+    .last-update-header,
+    .click-feedback,
+    .toast-notification,
+    .pdf-loading,
+    .modal-overlay,
+    .loading-state,
+    .empty-state {
+        display: none !important;
+    }
+    
+    /* ============================================
+       FOOTER DO PDF - VIA PSEUDO-ELEMENTO
+       ============================================ */
+    .dashboard-container::after {
+        content: "Dashboard gerado automaticamente em " attr(data-gerado);
+        display: block;
+        text-align: center;
+        font-size: 9px;
+        color: #adb5bd;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+        margin-top: 20px;
+    }
+    
+    /* ============================================
+       QUEBRAS DE PÁGINA
+       ============================================ */
+    .cards-section {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+    
+    .avisos-section {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+    
+    /* ============================================
+       AJUSTES FINOS
+       ============================================ */
+    .card-header {
+        padding-right: 0 !important;
+    }
+    
+    .aviso-header {
+        padding-right: 0 !important;
+    }
+    
+    .aviso-descricao {
+        padding-right: 0 !important;
+    }
+    
+    /* Força a cor de fundo em elementos com gradientes */
+    .dash-card,
+    .aviso-item,
+    .card-icon,
+    .aviso-icon {
+        background-image: none !important;
+    }
+    
+    /* ============================================
+       TEMA ESCURO - FORÇA CORES CLARAS NO PDF
+       ============================================ */
+    [data-theme="dark"] .dash-card,
+    [data-theme="dark"] .aviso-item {
+        background: #f8f9fa !important;
+        background-color: #f8f9fa !important;
+        border-color: #dee2e6 !important;
+    }
+    
+    [data-theme="dark"] .card-title,
+    [data-theme="dark"] .aviso-mensagem,
+    [data-theme="dark"] .card-value {
+        color: #1a1a2e !important;
+    }
+    
+    [data-theme="dark"] .card-text,
+    [data-theme="dark"] .aviso-descricao-texto {
+        color: #6c757d !important;
+    }
+    
+    [data-theme="dark"] .aviso-item.urgente {
+        background: #fff5f5 !important;
+        background-color: #fff5f5 !important;
+    }
+}

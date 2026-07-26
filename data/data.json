@@ -1,0 +1,135 @@
+{
+  "cards": [
+    {
+      "IDDASH": 1,
+      "Titulo": "Contas a Pagar Hoje",
+      "IDFormRegistro": 226,
+      "Cor": "#e74c3c",
+      "Valor": 9,
+      "Texto": "9 contas"
+    },
+    {
+      "IDDASH": 2,
+      "Titulo": "Clientes em Dia",
+      "IDFormRegistro": 227,
+      "Cor": "#2ecc71",
+      "Valor": 145,
+      "Texto": "145 clientes"
+    },
+    {
+      "IDDASH": 3,
+      "Titulo": "Pedidos do Dia",
+      "IDFormRegistro": 228,
+      "Cor": "#3498db",
+      "Valor": 23,
+      "Texto": "23 pedidos"
+    },
+    {
+      "IDDASH": 4,
+      "Titulo": "Pedidos Pendentes",
+      "IDFormRegistro": 229,
+      "Cor": "#f39c12",
+      "Valor": 12,
+      "Texto": "12 pendentes"
+    },
+    {
+      "IDDASH": 5,
+      "Titulo": "Estoque Crítico",
+      "IDFormRegistro": 230,
+      "Cor": "#e67e22",
+      "Valor": 15,
+      "Texto": "15 alertas"
+    },
+    {
+      "IDDASH": 6,
+      "Titulo": "Produtos Ativos",
+      "IDFormRegistro": 231,
+      "Cor": "#1abc9c",
+      "Valor": 1250,
+      "Texto": "1.250 itens"
+    },
+    {
+      "IDDASH": 7,
+      "Titulo": "Vendas do Dia",
+      "IDFormRegistro": 232,
+      "Cor": "#9b59b6",
+      "Valor": 87450,
+      "Texto": "R$ 87.450,00"
+    },
+    {
+      "IDDASH": 8,
+      "Titulo": "Clientes Novos Hoje",
+      "IDFormRegistro": 234,
+      "Cor": "#27ae60",
+      "Valor": 5,
+      "Texto": "5 clientes"
+    },
+    {
+      "IDDASH": 9,
+      "Titulo": "Clientes Inadimplentes",
+      "IDFormRegistro": 235,
+      "Cor": "#c0392b",
+      "Valor": 18,
+      "Texto": "18 clientes"
+    },
+    {
+      "IDDASH": 10,
+      "Titulo": "Notas Fiscais Emitidas",
+      "IDFormRegistro": 236,
+      "Cor": "#2980b9",
+      "Valor": 47,
+      "Texto": "47 notas"
+    },
+    {
+      "IDDASH": 11,
+      "Titulo": "Ordens de Serviço Abertas",
+      "IDFormRegistro": 237,
+      "Cor": "#d35400",
+      "Valor": 8,
+      "Texto": "8 OS ativas"
+    },
+    {
+      "IDDASH": 12,
+      "Titulo": "Funcionários Ativos",
+      "IDFormRegistro": 240,
+      "Cor": "#2c3e50",
+      "Valor": 342,
+      "Texto": "342 funcionários"
+    }
+  ],
+  "avisos": [
+    {
+      "IDAVISO": 1,
+      "Mensagem": "Fatura vence em 2 dias",
+      "IDFormRegistro": 100,
+      "DescricaoAviso": "Fornecedor: ABC Materiais Ltda - Fatura #4592",
+      "Avisar": "S",
+      "TemAviso": true,
+      "Valor": 5230.00,
+      "Texto": "Urgente",
+      "quantidade": 8
+    },
+    {
+      "IDAVISO": 2,
+      "Mensagem": "Estoque abaixo do mínimo",
+      "IDFormRegistro": 101,
+      "DescricaoAviso": "Produto: Processador Intel i7 - Apenas 3 unidades",
+      "Avisar": "S",
+      "TemAviso": true,
+      "Valor": 3,
+      "Texto": "Reposição necessária",
+      "quantidade": 3
+    },
+    {
+      "IDAVISO": 3,
+      "Mensagem": "Pagamento atrasado",
+      "IDFormRegistro": 102,
+      "DescricaoAviso": "Cliente: XYZ Comércio - NF 12345",
+      "Avisar": "S",
+      "TemAviso": false,
+      "Valor": 8750.00,
+      "Texto": "Cobrar cliente",
+      "quantidade": 5
+    }
+  ]
+}

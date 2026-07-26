@@ -1,0 +1,291 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>Dashboard Empresarial - Sistema Delphi</title>
+    <script>
+        // Early stub: garante que `window.dashboardApp` exista para chamadas externas
+        (function(){
+            if (typeof window !== 'undefined' && !window.dashboardApp) {
+                window._queuedProcessarDados = window._queuedProcessarDados || [];
+                window._queuedCarregarDados = window._queuedCarregarDados || false;
+                window.dashboardApp = {
+                    processarDados: function(dados){ window._queuedProcessarDados.push(dados); },
+                    carregarDados: function(){ window._queuedCarregarDados = true; }
+                };
+            }
+        })();
+    </script>
+    
+    <!-- Font Awesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- html2pdf CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- CSS Separados para melhor organização -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/avisos.css">
+    <link rel="stylesheet" href="css/print.css" media="print">
+</head>
+<body>
+    <div class="dashboard-container" id="dashboardContainer">
+
+        <!-- ============================================
+        SEÇÃO DE CARDS (INDICADORES)
+        ============================================ -->
+        <section class="cards-section" id="cardsSection" aria-label="Indicadores">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <h2>
+                        <i class="fas fa-th-large"></i> 
+                        Indicadores
+                    </h2>
+                    <span class="badge-count" id="cardsCount">Carregando...</span>
+                    <button class="btn-gear" id="btnGearCards" aria-label="Configurar indicadores" title="Configurar indicadores">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+                <div class="section-header-right">
+                    <!-- Data/hora da última atualização -->
+                    <span class="last-update-header" id="lastUpdate">Inicializando...</span>
+
+                    <button class="btn-reset" id="btnReset" aria-label="Resetar itens fechados" title="Resetar itens fechados">
+                        <i class="fas fa-undo-alt"></i>
+                        <span class="btn-label">Resetar</span>
+                    </button>
+                    
+                    <!-- Botão Help -->
+                    <button class="btn-help" id="btnHelp" aria-label="Ajuda" title="Ajuda">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                    
+                    <!-- Botão Gerar PDF -->
+                    <button class="btn-pdf" id="btnPdf" aria-label="Gerar PDF" title="Gerar PDF do dashboard">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                    
+                    <!-- Botão Alternar Tema -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema" title="Alternar tema claro/escuro">
+                        <i class="fas fa-sun theme-icon-light"></i>
+                        <i class="fas fa-moon theme-icon-dark"></i>
+                    </button>
+                    
+                    <!-- Botão Atualizar -->
+                    <button class="refresh-btn" id="refreshBtn" aria-label="Atualizar dados" title="Atualizar dados">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Grid de Cards -->
+            <div class="cards-grid" id="cardsGrid"></div>
+        </section>
+
+        <!-- ============================================
+        SEÇÃO DE AVISOS
+        ============================================ -->
+        <section class="avisos-section" id="avisosSection" aria-label="Alertas e Avisos">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <h2>
+                        <i class="fas fa-bell"></i> 
+                        Alertas & Avisos
+                    </h2>
+                    <span class="badge-count badge-alert" id="avisosCount">Carregando...</span>
+                    <button class="btn-gear" id="btnGearAvisos" aria-label="Configurar alertas" title="Configurar alertas">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Lista de Avisos -->
+            <div class="avisos-list" id="avisosList"></div>
+        </section>
+        
+    </div>
+
+    <!-- ============================================
+    MODAL DE AJUDA (HELP)
+    ============================================ -->
+    <div class="modal-overlay" id="modalHelp" style="display:none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-question-circle" style="color: var(--accent-primary);"></i>
+                    Ajuda do Dashboard
+                </h2>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- ============================================
+                NOVA SEÇÃO - ENTENDENDO O DASHBOARD
+                ============================================ -->
+                <div class="help-section help-highlight">
+                    <h3><i class="fas fa-lightbulb"></i> Entendendo o Dashboard</h3>
+                    <div class="help-grid">
+                        <div class="help-grid-item">
+                            <div class="help-grid-icon">
+                                <i class="fas fa-th-large" style="color: var(--accent-primary);"></i>
+                            </div>
+                            <div class="help-grid-content">
+                                <h4>📊 Indicadores</h4>
+                                <p>Mostram <strong>métricas e números</strong> do sistema em tempo real:</p>
+                                <ul>
+                                    <li>Total de clientes, pedidos, vendas</li>
+                                    <li>Valores financeiros e estoques</li>
+                                    <li>Desempenho e estatísticas</li>
+                                </ul>
+                                <span class="help-tag">Dados quantitativos</span>
+                            </div>
+                        </div>
+                        
+                        <div class="help-grid-item">
+                            <div class="help-grid-icon">
+                                <i class="fas fa-bell" style="color: var(--accent-danger);"></i>
+                            </div>
+                            <div class="help-grid-content">
+                                <h4>🔔 Alertas & Avisos</h4>
+                                <p>Substituem os <strong>antigos popups de alerta</strong> do sistema:</p>
+                                <ul>
+                                    <li>Estoque baixo ou produtos vencendo</li>
+                                    <li>Pedidos atrasados ou pendentes</li>
+                                    <li>Notificações importantes do sistema</li>
+                                </ul>
+                                <span class="help-tag help-tag-alert">Notificações em tempo real</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="help-divider">
+                        <i class="fas fa-arrow-right"></i>
+                        <span>Os alertas são mais <strong>reativos</strong> (te avisam de problemas), enquanto os indicadores são mais <strong>estratégicos</strong> (mostram o panorama geral).</span>
+                        <i class="fas fa-arrow-left"></i>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-th-large"></i> Indicadores</h3>
+                    <ul>
+                        <li><strong>Clique no card</strong> - Abre o formulário correspondente</li>
+                        <li><strong>Botão <i class="fas fa-arrow-right"></i></strong> - Abre o formulário correspondente</li>
+                        <li><strong>Botão <i class="fas fa-minus"></i></strong> - Desativa o card</li>
+                        <li><strong>Botão <i class="fas fa-times"></i></strong> - Oculta o card até a próxima reinicialização do sistema</li>
+                        <li><strong>Botão <i class="fas fa-cog"></i></strong> - Configura os indicadores</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-bell"></i> Alertas & Avisos</h3>
+                    <ul>
+                        <li><strong>Clique no aviso</strong> - Abre o formulário correspondente</li>
+                        <li><strong>Botão <i class="fas fa-arrow-right"></i></strong> - Abre o formulário correspondente</li>
+                        <li><strong>Botão <i class="fas fa-minus"></i></strong> - Desativa o aviso)</li>
+                        <li><strong>Botão <i class="fas fa-times"></i></strong> - Oculta o aviso até a próxima reinicialização do sistema</li>
+                        <li><strong>Botão <i class="fas fa-cog"></i></strong> - Configura os alertas</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-tools"></i> Ferramentas</h3>
+                    <ul>
+                        <li><strong><i class="fas fa-undo-alt"></i> Resetar</strong> - Restaura todos os cards e avisos fechados</li>
+                        <li><strong><i class="fas fa-file-pdf"></i> PDF</strong> - Gera um relatório em PDF do dashboard</li>
+                        <li><strong><i class="fas fa-sync-alt"></i> Atualizar</strong> - Recarrega os dados do dashboard</li>
+                        <li><strong><i class="fas fa-sun"></i> / <i class="fas fa-moon"></i> Tema</strong> - Alterna entre tema claro e escuro</li>
+                        <li><strong><i class="fas fa-question-circle"></i> Ajuda</strong> - Abre este modal com informações</li>
+                    </ul>
+                </div>
+                <!--    
+                <div class="help-section">
+                    <h3><i class="fas fa-info-circle"></i> Informações</h3>
+                    <ul>
+                        <li><strong>Cards com badge vermelho</strong> - Indicam valores urgentes ou críticos</li>
+                        <li><strong>Avisos com fundo vermelho</strong> - Alertas urgentes (quantidade &gt; 10.000.000)</li>
+                        <li><strong>Quantidade em destaque</strong> - Mostra o valor principal do aviso</li>
+                        <li><strong>Badges nos cards</strong> - Categorizam os indicadores (HOJE, MENSAL, URGENTE, etc.)</li>
+                        <li><strong>Itens fechados</strong> - São salvos no navegador e não aparecem até o reset</li>
+                    </ul>
+                </div>
+
+                <div class="help-footer">
+                    <p>
+                        <i class="fas fa-code"></i>
+                        Dashboard v5.0 - Sistema Integrado com Delphi
+                    </p>
+                    <p class="help-version">
+                        <i class="fas fa-clock"></i>
+                        Última atualização: <span id="helpUpdateTime">Carregando...</span>
+                    </p>
+                </div>-->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+    LOADING DO PDF (OVERLAY)
+    ============================================ -->
+    <div class="pdf-loading" id="pdfLoading" style="display:none;">
+        <div class="pdf-loading-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Gerando PDF...</span>
+            <small>Aguarde um momento</small>
+        </div>
+    </div>
+
+    <!-- ============================================
+    SCRIPTS
+    ============================================ -->
+    <!-- Dados -->
+    <script src="data/data.js"></script>
+    
+    <!-- Bridge para comunicação com Delphi -->
+    <script src="js/bridge.js"></script>
+    
+    <!-- Gerenciamento de tema -->
+    <script src="js/theme.js"></script>
+    
+    <!-- Aplicação principal -->
+    <script src="js/app.js"></script>
+
+    <!-- Layout PDF -->
+    <link rel="stylesheet" href="css/print.css">     
+
+    <!-- Safety: intercept refresh button to avoid errors calling carregarDados -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            const refresh = document.getElementById('refreshBtn');
+            if (!refresh) return;
+
+            // Use capture to run before other listeners and stop propagation
+            refresh.addEventListener('click', function(evt){
+                evt.stopImmediatePropagation();
+                evt.preventDefault();
+
+                try {
+                    if (window.dashboardApp && typeof window.dashboardApp.carregarDados === 'function') {
+                        window.dashboardApp.carregarDados();
+                        return;
+                    }
+                    if (typeof recarregarDataJson === 'function') {
+                        recarregarDataJson();
+                        return;
+                    }
+                    console.warn('Nenhuma rotina de recarregamento disponível');
+                } catch (e) {
+                    console.error('Erro seguro ao chamar carregarDados:', e);
+                }
+            }, {capture: true});
+        });
+    </script>
+</body>
+</html>
