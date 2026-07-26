@@ -18,21 +18,32 @@ Dashboard interativo para exibição de indicadores e alertas empresariais, inte
     LocalStorage – Persistência de preferências (tema, itens fechados)
 
 📁 Estrutura de Pastas
-text
 
-/
-├── index.html                     # Página principal do dashboard
-├── css/
-│   ├── base.css                   # Variáveis CSS, reset, estilos globais e modal de ajuda
-│   ├── cards.css                  # Estilos dos indicadores (cards)
-│   ├── avisos.css                 # Estilos dos alertas e avisos
-│   └── print.css                  # Estilos específicos para impressão e geração de PDF
-├── js/
-│   ├── app.js                     # Classe principal do DashboardApp (lógica e renderização)
-│   ├── bridge.js                  # Ponte de comunicação com Delphi (via console.log)
-│   └── theme.js                   # Gerenciador de tema claro/escuro com persistência
-└── data/
-    └── data.js                    # Dados de exemplo (cards e avisos) em formato JSON
+    / (raiz do projeto)
+
+        index.html – Página principal do dashboard
+
+        css/ – Estilos
+
+            base.css – Variáveis CSS, reset, estilos globais e modal de ajuda
+
+            cards.css – Estilos dos indicadores (cards)
+
+            avisos.css – Estilos dos alertas e avisos
+
+            print.css – Estilos para impressão e geração de PDF
+
+        js/ – Scripts JavaScript
+
+            app.js – Classe principal do DashboardApp (lógica e renderização)
+
+            bridge.js – Ponte de comunicação com Delphi (via console.log)
+
+            theme.js – Gerenciador de tema claro/escuro com persistência
+
+        data/ – Dados
+
+            data.js – Dados de exemplo (cards e avisos) em formato JSONON
 
 ⚙️ Funcionalidades Principais
 📈 Indicadores (Cards)
