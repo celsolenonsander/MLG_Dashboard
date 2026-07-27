@@ -1,4 +1,3 @@
-/* js/bridge.js */
 /**
  * Bridge de Comunicação Delphi - Via Console
  * @version 9.0.0 - Console (FUNCIONAL)

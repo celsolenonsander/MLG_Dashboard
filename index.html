@@ -1,24 +1,10 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#667eea">
-    <title>Dashboard Empresarial - Sistema Delphi</title>
-    <script>
-        // Early stub: garante que `window.dashboardApp` exista para chamadas externas
-        (function(){
-            if (typeof window !== 'undefined' && !window.dashboardApp) {
-                window._queuedProcessarDados = window._queuedProcessarDados || [];
-                window._queuedCarregarDados = window._queuedCarregarDados || false;
-                window.dashboardApp = {
-                    processarDados: function(dados){ window._queuedProcessarDados.push(dados); },
-                    carregarDados: function(){ window._queuedCarregarDados = true; }
-                };
-            }
-        })();
-    </script>
+    <title>Manager Plus DashBoard</title>
     
     <!-- Font Awesome 6 CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -28,12 +14,14 @@
     
     <!-- html2pdf CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <!-- CSS Separados para melhor organização -->
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/cards.css">
     <link rel="stylesheet" href="css/avisos.css">
     <link rel="stylesheet" href="css/print.css" media="print">
+    <link rel="stylesheet" href="sugestao-card/sugestao-card.css">    
 </head>
 <body>
     <div class="dashboard-container" id="dashboardContainer">
@@ -49,29 +37,51 @@
                         Indicadores
                     </h2>
                     <span class="badge-count" id="cardsCount">Carregando...</span>
+                    <!-- Data/hora da última atualização -->
+                    <span class="last-update-header" id="lastUpdate">Inicializando...</span>                    
                     <button class="btn-gear" id="btnGearCards" aria-label="Configurar indicadores" title="Configurar indicadores">
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
                 <div class="section-header-right">
-                    <!-- Data/hora da última atualização -->
-                    <span class="last-update-header" id="lastUpdate">Inicializando...</span>
 
-                    <button class="btn-reset" id="btnReset" aria-label="Resetar itens fechados" title="Resetar itens fechados">
+
+                    <button class="btn-reset" id="btnReset" aria-label="Exibir todos os cards" title="Exibir todos os cards">
                         <i class="fas fa-undo-alt"></i>
-                        <span class="btn-label">Resetar</span>
                     </button>
                     
                     <!-- Botão Help -->
                     <button class="btn-help" id="btnHelp" aria-label="Ajuda" title="Ajuda">
                         <i class="fas fa-question-circle"></i>
                     </button>
-                    
-                    <!-- Botão Gerar PDF -->
-                    <button class="btn-pdf" id="btnPdf" aria-label="Gerar PDF" title="Gerar PDF do dashboard">
+
+                    <!-- Botão salvar PDF no storage -->
+                    <button class="btn-pdf-storage" id="btnSavePdfStorage" aria-label="Salvar PDF no storage" title="Salvar PDF no storage">
                         <i class="fas fa-file-pdf"></i>
                     </button>
-                    
+
+
+                    <!-- ===== NOVO SELETOR DE EFEITOS ===== -->
+                    <div class="effect-selector" id="effectSelector">
+                        <span class="effect-label">Efeito:</span>
+                        <button class="effect-btn active" data-effect="shadow" title="Sombra suave">
+                            <i class="fas fa-square"></i> Sombra
+                        </button>
+                        <button class="effect-btn" data-effect="lift" title="Elevação e escala">
+                            <i class="fas fa-arrows-alt-v"></i> Elevação
+                        </button>
+                        <button class="effect-btn" data-effect="none" title="Sem efeito">
+                            <i class="fas fa-ban"></i> Nenhum
+                        </button>
+                        <button class="effect-btn" data-effect="glow" title="Brilho colorido com elevação">
+                            <i class="fas fa-star"></i> Brilho
+                        </button>
+                        <button class="effect-btn" data-effect="border" title="Borda e sombra interna">
+                            <i class="fas fa-border-all"></i> Borda
+                        </button>
+                    </div>
+                    <!-- ===== FIM DO SELETOR ===== -->
+
                     <!-- Botão Alternar Tema -->
                     <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema" title="Alternar tema claro/escuro">
                         <i class="fas fa-sun theme-icon-light"></i>
@@ -127,9 +137,6 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- ============================================
-                NOVA SEÇÃO - ENTENDENDO O DASHBOARD
-                ============================================ -->
                 <div class="help-section help-highlight">
                     <h3><i class="fas fa-lightbulb"></i> Entendendo o Dashboard</h3>
                     <div class="help-grid">
@@ -205,28 +212,6 @@
                         <li><strong><i class="fas fa-question-circle"></i> Ajuda</strong> - Abre este modal com informações</li>
                     </ul>
                 </div>
-                <!--    
-                <div class="help-section">
-                    <h3><i class="fas fa-info-circle"></i> Informações</h3>
-                    <ul>
-                        <li><strong>Cards com badge vermelho</strong> - Indicam valores urgentes ou críticos</li>
-                        <li><strong>Avisos com fundo vermelho</strong> - Alertas urgentes (quantidade &gt; 10.000.000)</li>
-                        <li><strong>Quantidade em destaque</strong> - Mostra o valor principal do aviso</li>
-                        <li><strong>Badges nos cards</strong> - Categorizam os indicadores (HOJE, MENSAL, URGENTE, etc.)</li>
-                        <li><strong>Itens fechados</strong> - São salvos no navegador e não aparecem até o reset</li>
-                    </ul>
-                </div>
-
-                <div class="help-footer">
-                    <p>
-                        <i class="fas fa-code"></i>
-                        Dashboard v5.0 - Sistema Integrado com Delphi
-                    </p>
-                    <p class="help-version">
-                        <i class="fas fa-clock"></i>
-                        Última atualização: <span id="helpUpdateTime">Carregando...</span>
-                    </p>
-                </div>-->
             </div>
         </div>
     </div>
@@ -243,10 +228,167 @@
     </div>
 
     <!-- ============================================
-    SCRIPTS
+    SCRIPTS - CARREGAMENTO DINÂMICO DE DADOS
     ============================================ -->
-    <!-- Dados -->
-    <script src="data/data.js"></script>
+	<script>
+		(function() {
+			'use strict';
+			
+			console.log('🚀 Iniciando Dashboard - v5.0');
+			console.log('📋 URL atual:', window.location.href);
+			
+			// Função para obter parâmetros da URL
+			function getParam(param) {
+				const urlParams = new URLSearchParams(window.location.search);
+				return urlParams.get(param);
+			}
+			
+			// Obtém o ID da URL
+			const id = getParam('id');
+			console.log('🔍 Parâmetro ID encontrado:', id || 'nenhum');
+			
+			// Define o arquivo de dados
+			let dataFile = 'data/data.js';
+			let dataFileDisplay = 'data/data.js (padrão)';
+			
+			if (id) {
+				dataFile = `data/data_${id}.js`;
+				dataFileDisplay = `data/data_${id}.js (ID: ${id})`;
+				console.log(`📦 Carregando dados específicos: ${dataFileDisplay}`);
+			} else {
+				console.log(`📦 Carregando dados padrão: ${dataFileDisplay}`);
+			}
+			
+			// Armazena informações globalmente
+			window.__DASHBOARD_ID = id || 'default';
+			window.__DASHBOARD_DATA_FILE = dataFile;
+			
+			console.log(`🏷️ Dashboard ID: ${window.__DASHBOARD_ID}`);
+			console.log(`📁 Arquivo de dados: ${window.__DASHBOARD_DATA_FILE}`);
+			
+			// ============================================
+			// FUNÇÃO PARA CARREGAR DADOS VIA SCRIPT
+			// (NÃO USA FETCH - COMPATÍVEL COM file://)
+			// ============================================
+			function carregarScriptDados() {
+				// Cria o elemento script
+				const script = document.createElement('script');
+				script.src = dataFile;
+				script.async = false; // Garante ordem de execução
+				
+				// Sucesso ao carregar
+				script.onload = function() {
+					console.log(`✅ Arquivo ${dataFile} carregado com sucesso!`);
+					
+					if (typeof DADOS_DASHBOARD !== 'undefined') {
+						console.log(`📊 Dados carregados: ${DADOS_DASHBOARD.cards?.length || 0} cards, ${DADOS_DASHBOARD.avisos?.length || 0} avisos`);
+						console.log(`📊 Dashboard ID: ${window.__DASHBOARD_ID}`);
+						
+						// Processa os dados se o app já estiver carregado
+						if (window.dashboardApp) {
+							console.log('🔄 Processando dados no app...');
+							window.dashboardApp.processarDados(DADOS_DASHBOARD);
+							window.dashboardApp.carregando = false;
+							window.dashboardApp.atualizarTimestamp();
+						} else {
+							console.warn('⚠️ dashboardApp ainda não carregado, aguardando...');
+							// Tenta novamente em 100ms
+							setTimeout(function() {
+								if (window.dashboardApp) {
+									window.dashboardApp.processarDados(DADOS_DASHBOARD);
+									window.dashboardApp.carregando = false;
+									window.dashboardApp.atualizarTimestamp();
+								}
+							}, 100);
+						}
+					} else {
+						console.warn('⚠️ DADOS_DASHBOARD não definido após carregar o arquivo');
+					}
+				};
+				
+				// Erro ao carregar - Fallback
+				script.onerror = function() {
+					console.error(`❌ Erro ao carregar ${dataFile}`);
+					
+					// Se não for o arquivo padrão, tenta o fallback
+					if (dataFile !== 'data/data.js') {
+						console.warn('⚠️ Tentando carregar data/data.js como fallback...');
+						const fallbackScript = document.createElement('script');
+						fallbackScript.src = 'data/data.js';
+						fallbackScript.async = false;
+						
+						fallbackScript.onload = function() {
+							console.log('✅ Arquivo data/data.js (fallback) carregado com sucesso!');
+							if (typeof DADOS_DASHBOARD !== 'undefined' && window.dashboardApp) {
+								window.dashboardApp.processarDados(DADOS_DASHBOARD);
+								window.dashboardApp.carregando = false;
+								window.dashboardApp.atualizarTimestamp();
+							}
+						};
+						
+						fallbackScript.onerror = function() {
+							console.error('❌ Falha ao carregar arquivo fallback data/data.js');
+							// Cria dados de fallback manualmente
+							if (window.dashboardApp) {
+								console.warn('⚠️ Usando dados de fallback manual...');
+								window.dashboardApp.usarDadosFallback();
+								window.dashboardApp.carregando = false;
+							}
+						};
+						
+						document.head.appendChild(fallbackScript);
+					} else {
+						console.error('❌ Falha ao carregar arquivo padrão data/data.js');
+						// Cria dados de fallback manualmente
+						if (window.dashboardApp) {
+							console.warn('⚠️ Usando dados de fallback manual...');
+							window.dashboardApp.usarDadosFallback();
+							window.dashboardApp.carregando = false;
+						}
+					}
+				};
+				
+				// Adiciona o script ao documento
+				document.head.appendChild(script);
+				console.log(`⏳ Aguardando carregamento do arquivo: ${dataFile}`);
+			}
+			
+			// ============================================
+			// AGUARDA O APP.JS CARREGAR
+			// ============================================
+			function aguardarApp() {
+				if (window.dashboardApp) {
+					console.log('✅ app.js carregado, iniciando carregamento dos dados...');
+					carregarScriptDados();
+				} else {
+					console.log('⏳ Aguardando app.js carregar...');
+					setTimeout(aguardarApp, 100);
+				}
+			}
+			
+			// Inicia o carregamento após pequeno delay
+			setTimeout(aguardarApp, 200);
+			
+			// ============================================
+			// INFORMAÇÕES NO CONSOLE
+			// ============================================
+			console.group('📊 Informações do Dashboard');
+			console.log('ID:', window.__DASHBOARD_ID);
+			console.log('Arquivo:', window.__DASHBOARD_DATA_FILE);
+			console.log('URL:', window.location.href);
+			console.log('Data/Hora:', new Date().toLocaleString('pt-BR'));
+			console.groupEnd();
+			
+		})();
+	</script>
+    
+    <!-- Configuração e utilidades -->
+    <script src="js/core/config.js"></script>
+    <script src="js/core/utils.js"></script>
+
+    <!-- Componentes de UI -->
+    <script src="js/components/card-renderer.js"></script>
+    <script src="js/components/aviso-renderer.js"></script>
     
     <!-- Bridge para comunicação com Delphi -->
     <script src="js/bridge.js"></script>
@@ -256,36 +398,13 @@
     
     <!-- Aplicação principal -->
     <script src="js/app.js"></script>
+    <script src="js/pdf-export.js"></script>
+    <script src="js/effect-selector.js"></script>
+    <!-- Feature: Sugestão de Card -->
+    <script src="sugestao-card/sugestao-card.js"></script>
 
     <!-- Layout PDF -->
-    <link rel="stylesheet" href="css/print.css">     
-
-    <!-- Safety: intercept refresh button to avoid errors calling carregarDados -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function(){
-            const refresh = document.getElementById('refreshBtn');
-            if (!refresh) return;
-
-            // Use capture to run before other listeners and stop propagation
-            refresh.addEventListener('click', function(evt){
-                evt.stopImmediatePropagation();
-                evt.preventDefault();
-
-                try {
-                    if (window.dashboardApp && typeof window.dashboardApp.carregarDados === 'function') {
-                        window.dashboardApp.carregarDados();
-                        return;
-                    }
-                    if (typeof recarregarDataJson === 'function') {
-                        recarregarDataJson();
-                        return;
-                    }
-                    console.warn('Nenhuma rotina de recarregamento disponível');
-                } catch (e) {
-                    console.error('Erro seguro ao chamar carregarDados:', e);
-                }
-            }, {capture: true});
-        });
-    </script>
+    <link rel="stylesheet" href="css/print.css">
+    <link rel="stylesheet" href="css/pdf-export.css">
 </body>
 </html>

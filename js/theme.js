@@ -1,4 +1,3 @@
-/* js/theme.js */
 /**
  * Módulo de Controle de Tema
  * Gerencia temas claro/escuro com persistência em localStorage
