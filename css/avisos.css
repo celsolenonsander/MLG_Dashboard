@@ -1,4 +1,3 @@
-/* css/avisos.css */
 /* ============================================
    AVISOS - FULL WIDTH COM BOTÕES NA LATERAL DIREITA
    ============================================ */
@@ -17,6 +16,7 @@
 }
 
 .aviso-item {
+    background: var(--bg-card);
     border-radius: 8px;
     padding: 10px 14px;
     box-shadow: var(--shadow-sm);
@@ -32,14 +32,40 @@
     border: 1px solid var(--border-color);
     border-left: 4px solid var(--aviso-color, #6a6aff);
     
-    /* COR DE FUNDO - será aplicada via JavaScript com rgba() */
+    /* FALLBACK para html2canvas - COR SÓLIDA */
     background: var(--bg-card);
     
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 8%, var(--bg-card) 92%);
+    
     min-height: 75px;
+    max-height: 100px;
 }
 
-.aviso-item.urgente {
-    border-left-color: var(--accent-danger) !important;
+/* Fallback para navegadores que não suportam color-mix */
+@supports not (background: color-mix(in srgb, red 10%, white)) {
+    .aviso-item {
+        background: var(--bg-card);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .aviso-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--aviso-color, #6a6aff);
+        opacity: 0.08;
+        z-index: 0;
+    }
+    
+    .aviso-item > * {
+        position: relative;
+        z-index: 1;
+    }
 }
 
 /* ============================================
@@ -55,8 +81,38 @@
     z-index: 5;
 }
 
-.aviso-item .aviso-abrir,
-.aviso-item .aviso-desativar,
+/* Botão abrir (seta) */
+.aviso-item .aviso-abrir {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--aviso-color, #6a6aff);
+    background: transparent;
+    color: var(--aviso-color, #6a6aff);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    transition: all var(--transition-fast);
+    padding: 0;
+    opacity: 0;
+    transform: scale(0.8);
+}
+
+.aviso-item:hover .aviso-abrir {
+    opacity: 0.6;
+    transform: scale(1);
+}
+
+.aviso-abrir:hover {
+    background: var(--aviso-color, #6a6aff);
+    color: white;
+    transform: scale(1.15) !important;
+    opacity: 1 !important;
+}
+
+/* Botão fechar */
 .aviso-item .aviso-fechar {
     width: 20px;
     height: 20px;
@@ -75,18 +131,9 @@
     transform: scale(0.8);
 }
 
-.aviso-item:hover .aviso-abrir,
-.aviso-item:hover .aviso-desativar,
 .aviso-item:hover .aviso-fechar {
     opacity: 0.6;
     transform: scale(1);
-}
-
-.aviso-abrir:hover {
-    background: var(--aviso-color, #6a6aff);
-    color: white;
-    transform: scale(1.15) !important;
-    opacity: 1 !important;
 }
 
 .aviso-fechar:hover {
@@ -97,12 +144,41 @@
     opacity: 1 !important;
 }
 
+/* Botão desativar */
+.aviso-item .aviso-desativar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--aviso-color, #6a6aff);
+    background: transparent;
+    color: var(--aviso-color, #6a6aff);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    transition: all var(--transition-fast);
+    padding: 0;
+    opacity: 0;
+    transform: scale(0.8);
+}
+
+.aviso-item:hover .aviso-desativar {
+    opacity: 0.6;
+    transform: scale(1);
+}
+
 .aviso-desativar:hover {
     background: var(--accent-warning);
     border-color: var(--accent-warning);
     color: white;
     transform: scale(1.15) !important;
     opacity: 1 !important;
+}
+
+/* Avisos urgentes - cores vermelhas */
+.aviso-item.urgente {
+    border-left-color: var(--accent-danger) !important;
 }
 
 .aviso-item.urgente .aviso-abrir {
@@ -135,6 +211,49 @@
     background: var(--accent-warning);
     border-color: var(--accent-warning);
     color: white;
+}
+
+.aviso-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 14%, var(--bg-card) 86%);
+}
+
+.aviso-item:active {
+    transform: scale(0.99);
+}
+
+/* ============================================
+   AVISO URGENTE
+   ============================================ */
+.aviso-item.urgente {
+    border-left-color: var(--accent-danger) !important;
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 10%, var(--bg-card) 90%);
+}
+
+.aviso-item.urgente:hover {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 16%, var(--bg-card) 84%);
+}
+
+/* Fallback para urgente */
+@supports not (background: color-mix(in srgb, red 10%, white)) {
+    .aviso-item.urgente {
+        background: var(--aviso-urgente-bg);
+    }
+    
+    .aviso-item.urgente::before {
+        background: var(--accent-danger);
+        opacity: 0.12;
+    }
 }
 
 /* ============================================
@@ -183,6 +302,63 @@
 }
 
 /* ============================================
+   BADGE DO AVISO
+   ============================================ */
+.aviso-badge {
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    color: var(--aviso-color, #6a6aff);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 20%, var(--bg-card) 80%);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    /* FALLBACK - COR SÓLIDA */
+    border: 1px solid var(--border-color);
+    /* Mantém para navegadores modernos */
+    border: 1px solid color-mix(in srgb, var(--aviso-color, #6a6aff) 30%, transparent);
+    transition: all var(--transition-fast);
+    line-height: 1.2;
+    margin-right: 10px;
+    margin-left: auto;
+}
+
+.aviso-item:hover .aviso-badge {
+    transform: scale(1.02);
+}
+
+/* Fallback para badge */
+@supports not (background: color-mix(in srgb, red 10%, white)) {
+    .aviso-badge {
+        background: var(--badge-bg);
+        color: var(--badge-text);
+        border: 1px solid var(--border-color);
+    }
+}
+
+.aviso-item.urgente .aviso-badge {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    color: var(--accent-danger);
+    border: 1px solid var(--accent-danger);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 20%, var(--bg-card) 80%);
+    border-color: color-mix(in srgb, var(--accent-danger) 30%, transparent);
+}
+
+@supports not (background: color-mix(in srgb, red 10%, white)) {
+    .aviso-item.urgente .aviso-badge {
+        background: var(--accent-danger);
+        color: white;
+        border: 1px solid var(--accent-danger);
+    }
+}
+
+/* ============================================
    QUANTIDADE EM DESTAQUE NO AVISO
    ============================================ */
 .aviso-descricao {
@@ -200,17 +376,51 @@
 .aviso-qtd-destaque {
     font-size: 1.2rem;
     font-weight: 900;
+    color: var(--aviso-color, #6a6aff);
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 12%, var(--bg-card) 88%);
     padding: 0 8px;
     border-radius: 4px;
+    /* FALLBACK - COR SÓLIDA */
+    border: 1px solid var(--border-color);
+    /* Mantém para navegadores modernos */
+    border: 1px solid color-mix(in srgb, var(--aviso-color, #6a6aff) 20%, transparent);
     min-width: 24px;
     text-align: center;
     line-height: 1.4;
     flex-shrink: 0;
-    /* Cor e fundo serão aplicados via JavaScript */
+}
+
+/* Fallback para navegadores sem color-mix */
+@supports not (background: color-mix(in srgb, red 10%, white)) {
+    .aviso-qtd-destaque {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+    }
+}
+
+/* Avisos urgentes - quantidade em destaque com cor vermelha */
+.aviso-item.urgente .aviso-qtd-destaque {
+    color: var(--accent-danger);
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    border-color: var(--accent-danger);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 12%, var(--bg-card) 88%);
+    border-color: color-mix(in srgb, var(--accent-danger) 20%, transparent);
 }
 
 .aviso-descricao-texto {
     flex: 1;
+}
+
+/* ============================================
+   RODAPÉ DO AVISO
+   ============================================ */
+.aviso-info {
+    display: none;
 }
 
 /* ============================================
@@ -221,6 +431,7 @@
         padding: 8px 12px;
         border-left-width: 4px;
         min-height: 65px;
+        max-height: 90px;
     }
     
     .aviso-header {
@@ -241,9 +452,15 @@
         border-radius: 5px;
     }
     
+    .aviso-badge {
+        font-size: 0.5rem;
+        padding: 1px 6px;
+        border-radius: 6px;
+    }
+    
     .aviso-item .aviso-abrir,
-    .aviso-item .aviso-desativar,
-    .aviso-item .aviso-fechar {
+    .aviso-item .aviso-fechar,
+    .aviso-item .aviso-desativar {
         width: 18px;
         height: 18px;
         font-size: 0.45rem;
@@ -274,6 +491,7 @@
         border-left-width: 3px;
         border-radius: 6px;
         min-height: 60px;
+        max-height: 85px;
     }
     
     .aviso-header {
@@ -297,9 +515,16 @@
         border-radius: 4px;
     }
     
+    .aviso-badge {
+        font-size: 0.45rem;
+        padding: 1px 5px;
+        border-radius: 5px;
+        order: 2;
+    }
+    
     .aviso-item .aviso-abrir,
-    .aviso-item .aviso-desativar,
-    .aviso-item .aviso-fechar {
+    .aviso-item .aviso-fechar,
+    .aviso-item .aviso-desativar {
         width: 16px;
         height: 16px;
         font-size: 0.4rem;
@@ -331,12 +556,114 @@
    TEMA ESCURO - AJUSTES ESPECÍFICOS
    ============================================ */
 [data-theme="dark"] .aviso-item {
+    /* FALLBACK - COR SÓLIDA */
     background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 15%, var(--bg-card) 85%);
+}
+
+[data-theme="dark"] .aviso-item:hover {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 22%, var(--bg-card) 78%);
+}
+
+[data-theme="dark"] .aviso-item.urgente {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 18%, var(--bg-card) 82%);
+}
+
+[data-theme="dark"] .aviso-item.urgente:hover {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 25%, var(--bg-card) 75%);
 }
 
 [data-theme="dark"] .aviso-qtd-destaque {
+    /* FALLBACK - COR SÓLIDA */
     background: var(--bg-card);
     border-color: var(--border-color);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 20%, var(--bg-card) 80%);
+    border-color: color-mix(in srgb, var(--aviso-color, #6a6aff) 30%, transparent);
+}
+
+[data-theme="dark"] .aviso-item.urgente .aviso-qtd-destaque {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    border-color: var(--accent-danger);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 20%, var(--bg-card) 80%);
+    border-color: color-mix(in srgb, var(--accent-danger) 30%, transparent);
+}
+
+[data-theme="dark"] .aviso-badge {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--aviso-color, #6a6aff) 25%, var(--bg-card) 75%);
+    border-color: color-mix(in srgb, var(--aviso-color, #6a6aff) 35%, transparent);
+}
+
+[data-theme="dark"] .aviso-item.urgente .aviso-badge {
+    /* FALLBACK - COR SÓLIDA */
+    background: var(--bg-card);
+    border-color: var(--accent-danger);
+    /* Mantém para navegadores modernos */
+    background: color-mix(in srgb, var(--accent-danger) 25%, var(--bg-card) 75%);
+    border-color: color-mix(in srgb, var(--accent-danger) 35%, transparent);
+}
+
+/* Fallback para tema escuro sem color-mix */
+@supports not (background: color-mix(in srgb, red 10%, white)) {
+    [data-theme="dark"] .aviso-item {
+        background: var(--bg-card);
+    }
+    
+    [data-theme="dark"] .aviso-item::before {
+        opacity: 0.15;
+    }
+    
+    [data-theme="dark"] .aviso-item:hover::before {
+        opacity: 0.25;
+    }
+    
+    [data-theme="dark"] .aviso-item.urgente::before {
+        opacity: 0.2;
+    }
+    
+    [data-theme="dark"] .aviso-item.urgente:hover::before {
+        opacity: 0.3;
+    }
+    
+    [data-theme="dark"] .aviso-qtd-destaque {
+        background: var(--bg-card);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    [data-theme="dark"] .aviso-item.urgente .aviso-qtd-destaque {
+        color: var(--accent-danger);
+        border-color: var(--accent-danger);
+        background: var(--bg-card);
+    }
+    
+    [data-theme="dark"] .aviso-badge {
+        background: var(--bg-card);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    [data-theme="dark"] .aviso-item.urgente .aviso-badge {
+        background: var(--bg-card);
+        border-color: var(--accent-danger);
+        color: var(--accent-danger);
+    }
 }
 
 /* ============================================
@@ -352,20 +679,22 @@
         border: 1px solid #ddd !important;
         border-left: 4px solid #666 !important;
         min-height: auto !important;
-        padding: 8px 12px !important;
         max-height: none !important;
-        background-color: white !important;
+        padding: 8px 12px !important;
     }
     
     .aviso-item.urgente {
         border-left-color: #e74c3c !important;
         background: #fff5f5 !important;
-        background-color: #fff5f5 !important;
     }
     
     .aviso-item .aviso-abrir,
-    .aviso-item .aviso-desativar,
-    .aviso-item .aviso-fechar {
+    .aviso-item .aviso-fechar,
+    .aviso-item .aviso-desativar {
+        display: none !important;
+    }
+    
+    .aviso-info {
         display: none !important;
     }
     
@@ -380,6 +709,18 @@
         background: #fff5f5 !important;
         border-color: #e74c3c !important;
     }
+    
+    .aviso-badge {
+        background: #f5f5f5 !important;
+        border: 1px solid #ddd !important;
+        color: #333 !important;
+    }
+    
+    .aviso-item.urgente .aviso-badge {
+        background: #e74c3c !important;
+        border-color: #e74c3c !important;
+        color: white !important;
+    }
 }
 
 /* ============================================
@@ -392,6 +733,19 @@
 }
 
 .aviso-item.urgente:focus-visible {
+    outline-color: var(--accent-danger);
+}
+
+.aviso-abrir:focus-visible,
+.aviso-fechar:focus-visible,
+.aviso-desativar:focus-visible {
+    outline: 2px solid var(--aviso-color, #6a6aff);
+    outline-offset: 2px;
+}
+
+.aviso-item.urgente .aviso-abrir:focus-visible,
+.aviso-item.urgente .aviso-fechar:focus-visible,
+.aviso-item.urgente .aviso-desativar:focus-visible {
     outline-color: var(--accent-danger);
 }
 
@@ -432,4 +786,38 @@
 
 .aviso-item {
     animation: avisoEntrance 0.4s ease-out backwards;
+}
+
+/* ============================================
+   SUPORTE PARA CORES DINÂMICAS EM TODOS OS ELEMENTOS
+   ============================================ */
+.aviso-item * {
+    transition: all var(--transition-fast);
+}
+
+/* ============================================
+   CORREÇÃO PARA PDF - REMOVE COLOR-MIX EM IMPRESSÃO
+   ============================================ */
+@media print {
+    .aviso-item,
+    .aviso-item.urgente,
+    .aviso-item:hover,
+    .aviso-item.urgente:hover {
+        background: white !important;
+        background-color: white !important;
+    }
+    
+    .aviso-badge,
+    .aviso-item.urgente .aviso-badge {
+        background: #f5f5f5 !important;
+        background-color: #f5f5f5 !important;
+        border: 1px solid #ddd !important;
+    }
+    
+    .aviso-qtd-destaque,
+    .aviso-item.urgente .aviso-qtd-destaque {
+        background: #f5f5f5 !important;
+        background-color: #f5f5f5 !important;
+        border: 1px solid #ddd !important;
+    }
 }

@@ -1,27 +1,10 @@
-/* js/app.js */
-// Stub `window.dashboardApp` to safely queue calls made before full initialization
-(function(){
-    if (typeof window !== 'undefined' && !window.dashboardApp) {
-        window._queuedProcessarDados = window._queuedProcessarDados || [];
-        window._queuedCarregarDados = window._queuedCarregarDados || false;
-        window.dashboardApp = {
-            processarDados: function(dados){
-                window._queuedProcessarDados.push(dados);
-            },
-            carregarDados: function(){
-                window._queuedCarregarDados = true;
-            }
-        };
-    }
-})();
-
-const LIMITE_URGENCIA = 10000000;
+const LIMITE_URGENCIA = window.DashboardConfig?.LIMITE_URGENCIA ?? 10000000;
 
 // ============================================
 // CORES PARA AVISOS - CICLO DE 10 CORES
 // ============================================
 
-const CORES_AVISOS = [
+const CORES_AVISOS = window.DashboardConfig?.CORES_AVISOS ?? [
     '#ef4444', // Vermelho
     '#f97316', // Laranja
     '#eab308', // Amarelo
@@ -34,20 +17,6 @@ const CORES_AVISOS = [
     '#10b981'  // Verde-água
 ];
 
-/*
-const CORES_AVISOS = [
-    '#fca5a5', // Vermelho pastel
-    '#fdba74', // Laranja pastel
-    '#fde047', // Amarelo pastel
-    '#86efac', // Verde pastel
-    '#93c5fd', // Azul pastel
-    '#a5b4fc', // Índigo pastel
-    '#d8b4fe', // Violeta pastel
-    '#f9a8d4', // Rosa pastel
-    '#67e8f9', // Ciano pastel
-    '#6ee7b7'  // Verde-água pastel
-];*/
-
 class DashboardApp {
     constructor() {
         this.cardsGrid = document.getElementById('cardsGrid');
@@ -59,17 +28,19 @@ class DashboardApp {
         this.connectionStatus = document.getElementById('connectionStatus');
         
         this.data = null;
-        this.carregando = false;
+        this.carregando = false;  
         
         // 🔑 CHAVES PARA LOCALSTORAGE
         this.CARDS_FECHADOS_KEY = 'dashboard_cards_fechados';
         this.AVISOS_FECHADOS_KEY = 'dashboard_avisos_fechados';
+        // this.ULTIMO_ENVIO_KEY = 'dashboard_ultimo_envio_pdf'; // ❌ REMOVIDO – não usamos mais controle diário
+        this._envioAgendado = false;
         
         // Carrega lista de itens fechados
         this.cardsFechados = this.carregarFechados(this.CARDS_FECHADOS_KEY);
         this.avisosFechados = this.carregarFechados(this.AVISOS_FECHADOS_KEY);
         
-        this.mapaIcones = {
+        this.mapaIcones = window.DashboardConfig?.MAPA_ICONES || {
             'Contas': 'fa-file-invoice-dollar',
             'Clientes': 'fa-users',
             'Pedidos': 'fa-shopping-cart',
@@ -82,11 +53,14 @@ class DashboardApp {
             'Funcionários': 'fa-id-card',
             'default': 'fa-chart-bar'
         };
+
+        this.cardRenderer = new window.DashboardCardRenderer(this);
+        this.avisoRenderer = new window.DashboardAvisoRenderer(this);
+
         
         // ============================================
         // CORES PARA AVISOS - CICLO DE 10 CORES
         // ============================================
-        // Usa as cores do data.js ou define um fallback
         this.paletaCoresAvisos = typeof CORES_AVISOS !== 'undefined' 
             ? CORES_AVISOS 
             : [
@@ -97,6 +71,11 @@ class DashboardApp {
         
         // Índice para controle de cores (inicia em 0)
         this.indiceCorAtual = 0;
+        
+        // LOG: Informações do dashboard
+        console.log('🏗️ DashboardApp instanciado');
+        console.log(`📊 Dashboard ID: ${window.__DASHBOARD_ID || 'default'}`);
+        console.log(`📁 Arquivo de dados: ${window.__DASHBOARD_DATA_FILE || 'desconhecido'}`);
         
         this.inicializar();
     }
@@ -190,6 +169,7 @@ class DashboardApp {
         console.log(`💾 Cards fechados: ${this.cardsFechados.length}`);
         console.log(`💾 Avisos fechados: ${this.avisosFechados.length}`);
         console.log(`🎨 Cores disponíveis: ${this.paletaCoresAvisos.length} cores em ciclo`);
+        console.log(`🏷️ ID atual: ${window.__DASHBOARD_ID || 'default'}`);
         
         this.mostrarCarregamento();
         this.configurarEventos();
@@ -325,6 +305,20 @@ class DashboardApp {
         if (btnPdf) {
             btnPdf.addEventListener('click', () => this.gerarPDF());
         }
+
+        // Botão Salvar PDF no Disco
+        const btnSavePdfDisco = document.getElementById('btnSavePdfDisco');
+        if (btnSavePdfDisco) {
+            btnSavePdfDisco.addEventListener('click', () => {
+                console.log('💾 Solicitando salvamento do PDF no disco...');
+                if (window.pdfExportManager) {
+                    window.pdfExportManager.salvarPdfNoDisco(False);
+                } else {
+                    console.warn('⚠️ PdfExportManager não disponível');
+                    this.mostrarFeedback('⚠️ Gerenciador de PDF não disponível');
+                }
+            });
+        }        
         
         let timeoutResize;
         window.addEventListener('resize', () => {
@@ -339,24 +333,116 @@ class DashboardApp {
             }
         });
     }    
-    carregarDados() {
-        if (this.carregando) return;
-        this.carregando = true;
+	
+	carregarDados() {
+		if (this.carregando) return;
+		this.carregando = true;
 
-        if (typeof DADOS_DASHBOARD !== 'undefined') {
-            console.log('📦 Dados carregados de data/data.js');
-            this.processarDados(DADOS_DASHBOARD);
-            this.carregando = false;
-            this.atualizarTimestamp();
+		console.log(`🔄 Carregando dados do arquivo: ${window.__DASHBOARD_DATA_FILE || 'desconhecido'}`);
+		console.log(`🏷️ ID: ${window.__DASHBOARD_ID || 'default'}`);
+
+		// 🔥 NOVO: Aguarda o carregamento do arquivo específico
+		if (window.__DASHBOARD_ID && window.__DASHBOARD_ID !== 'default') {
+			// Tem ID específico, aguarda o arquivo carregar
+			console.log(`⏳ Aguardando arquivo data/data_${window.__DASHBOARD_ID}.js carregar...`);
+			
+			// Verifica se o DADOS_DASHBOARD já existe
+			if (typeof DADOS_DASHBOARD !== 'undefined') {
+				console.log(`📦 Dados carregados de ${window.__DASHBOARD_DATA_FILE}`);
+				this.processarDados(DADOS_DASHBOARD);
+				this.carregando = false;
+				this.atualizarTimestamp();
+				return;
+			}
+			
+			// Se não existe, tenta novamente em 100ms (até 10 tentativas)
+			let tentativas = 0;
+			const maxTentativas = 20; // 2 segundos no total
+			
+			const aguardarDados = () => {
+				tentativas++;
+				if (typeof DADOS_DASHBOARD !== 'undefined') {
+					console.log(`📦 Dados carregados após ${tentativas} tentativa(s)`);
+					this.processarDados(DADOS_DASHBOARD);
+					this.carregando = false;
+					this.atualizarTimestamp();
+					return;
+				}
+				
+				if (tentativas >= maxTentativas) {
+					console.warn(`⚠️ DADOS_DASHBOARD não encontrado após ${maxTentativas} tentativas, usando fallback`);
+					this.usarDadosFallback();
+					this.carregando = false;
+					this.atualizarTimestamp();
+					return;
+				}
+				
+				console.log(`⏳ Aguardando dados... (${tentativas}/${maxTentativas})`);
+				setTimeout(aguardarDados, 100);
+			};
+			
+			aguardarDados();
+			return;
+		}
+
+		// Sem ID específico, usa data/data.js
+		if (typeof DADOS_DASHBOARD !== 'undefined') {
+			console.log(`📦 Dados carregados de ${window.__DASHBOARD_DATA_FILE || 'data/data.js'}`);
+			console.log(`📊 Cards: ${DADOS_DASHBOARD.cards?.length || 0}`);
+			console.log(`📊 Avisos: ${DADOS_DASHBOARD.avisos?.length || 0}`);
+			this.processarDados(DADOS_DASHBOARD);
+			this.carregando = false;
+			this.atualizarTimestamp();
+			return;
+		}
+		
+		console.warn('⚠️ DADOS_DASHBOARD não encontrado');
+		this.usarDadosFallback();
+		this.carregando = false;
+		this.atualizarTimestamp();
+	}    
+
+    // ============================================
+    // CONTROLE DE ENVIO AUTOMÁTICO DE PDF
+    // ============================================
+
+    // ❌ MÉTODOS REMOVIDOS:
+    // _deveEnviarPDFAutomatico() 
+    // _marcarPDFEnviado()
+    // A propriedade ULTIMO_ENVIO_KEY foi removida do construtor
+
+    _agendarEnvioAutomatico() {
+        // Evita agendar mais de uma vez
+        if (this._envioAgendado) {
+            console.log('⏭️ Envio automático já agendado');
             return;
         }
-        
-        console.warn('⚠️ DADOS_DASHBOARD não encontrado');
-        this.usarDadosFallback();
-        this.carregando = false;
-        this.atualizarTimestamp();
-    }
-    
+
+        // ❌ REMOVIDA a verificação diária: if (!this._deveEnviarPDFAutomatico()) return;
+
+        this._envioAgendado = true;
+        console.log('⏰ Agendando envio automático do PDF em 10 segundos...');
+
+        setTimeout(() => {
+            console.log('📄 Executando envio automático do PDF');
+            if (window.pdfExportManager) {
+                window.pdfExportManager.salvarPdfNoDisco(true);
+                // ❌ this._marcarPDFEnviado(); // não faz mais sentido
+            } else {
+                console.warn('⚠️ pdfExportManager não disponível para envio automático');
+                // Tenta novamente após 2 segundos
+                setTimeout(() => {
+                    if (window.pdfExportManager) {
+                        window.pdfExportManager.salvarPdfNoDisco(true);
+                        // ❌ this._marcarPDFEnviado();
+                    } else {
+                        console.error('❌ pdfExportManager indisponível após tentativa');
+                    }
+                }, 2000);
+            }
+        }, 10000); // 10 segundos
+    }    
+	
     processarDados(dados) {
         if (!dados?.cards || !dados?.avisos) {
             this.usarDadosFallback();
@@ -375,6 +461,7 @@ class DashboardApp {
         
         console.log(`📊 Cards: ${dados.cards.length} → ${cardsFiltrados.length} (${dados.cards.length - cardsFiltrados.length} fechados)`);
         console.log(`📊 Avisos: ${dados.avisos.length} → ${avisosFiltrados.length} (${dados.avisos.length - avisosFiltrados.length} fechados)`);
+        console.log(`🏷️ Processando dados para ID: ${window.__DASHBOARD_ID || 'default'}`);
         
         // Resetar o índice de cores antes de renderizar os avisos
         this.resetarIndiceCores();
@@ -382,9 +469,13 @@ class DashboardApp {
         this.renderizarCards(cardsFiltrados);
         this.renderizarAvisos(avisosFiltrados);
         this.atualizarContadores(cardsFiltrados.length, avisosFiltrados.length);
+
+        // Agendamento automático do PDF – agora sempre agendado (sem restrição diária)
+        this._agendarEnvioAutomatico();        
     }
     
     usarDadosFallback() {
+        console.warn('⚠️ Usando dados de fallback');
         this.processarDados({
             cards: [{ IDDASH: 0, Titulo: 'Erro', IDFormRegistro: 0, Cor: '#e74c3c', Valor: 0, Texto: 'Falha' }],
             avisos: [{ IDAVISO: 0, Mensagem: 'Erro', IDFormRegistro: 0, DescricaoAviso: 'Falha', Avisar: 'S', TemAviso: true, Valor: 0, Texto: 'Erro', quantidade: 999 }]
@@ -395,7 +486,6 @@ class DashboardApp {
         this.cardsGrid.innerHTML = '';
         
         if (!cards?.length) {
-            this.cardsGrid.innerHTML = '<div class="empty-state"><i class="fas fa-chart-bar"></i><span>Nenhum indicador</span></div>';
             return;
         }
         
@@ -405,78 +495,7 @@ class DashboardApp {
     }
     
     criarCard(card, indice) {
-        const artigo = document.createElement('article');
-        artigo.className = 'dash-card';
-        artigo.style.setProperty('--card-color', card.Cor || '#6a6aff');
-        artigo.style.animationDelay = `${indice * 0.08}s`;
-        artigo.setAttribute('tabindex', '0');
-        artigo.setAttribute('role', 'button');
-        artigo.setAttribute('aria-label', `${card.Titulo}: ${card.Texto} - Clique para abrir`);
-        artigo.title = `Clique para abrir: ${card.Titulo}`;
-        
-        const icone = this.obterIcone(card.Titulo);
-        const badge = this.obterBadge(card.Valor, card.Titulo);
-        
-        artigo.innerHTML = `
-            <div class="card-acoes">
-                <button class="card-abrir" title="Abrir card">
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-                <button class="card-desativar" title="Remover card">
-                    <i class="fas fa-minus"></i>
-                </button>
-                <button class="card-fechar" title="Fechar card">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="card-header">
-                <div class="card-icon"><i class="fas ${icone}"></i></div>
-            </div>
-            <h3 class="card-title">${this.escapeHtml(card.Titulo)}</h3>
-            <div class="card-value">${this.formatarNumero(card.Valor)}</div>
-            <div class="card-text">${this.escapeHtml(card.Texto || '')}</div>
-        `;
-        
-        artigo.addEventListener('click', (e) => {
-            if (!e.target.closest('.card-abrir') && 
-                !e.target.closest('.card-fechar') && 
-                !e.target.closest('.card-desativar')) {
-                this.cliqueCard(card);
-            }
-        });
-        
-        artigo.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.cliqueCard(card);
-            }
-        });
-        
-        const btnAbrir = artigo.querySelector('.card-abrir');
-        if (btnAbrir) {
-            btnAbrir.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.cliqueCard(card);
-            });
-        }
-        
-        const btnDesativar = artigo.querySelector('.card-desativar');
-        if (btnDesativar) {
-            btnDesativar.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.desativarCardTeste(artigo, card);
-            });
-        }
-        
-        const btnFechar = artigo.querySelector('.card-fechar');
-        if (btnFechar) {
-            btnFechar.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.fecharCard(artigo, card);
-            });
-        }
-        
-        return artigo;
+        return this.cardRenderer.criarCard(card, indice);
     }
 
     // ============================================
@@ -582,7 +601,7 @@ class DashboardApp {
             : 'Nenhum indicador';
         
         if (cardsVisiveis === 0) {
-            this.cardsGrid.innerHTML = '<div class="empty-state"><i class="fas fa-chart-bar"></i><span>Nenhum indicador</span></div>';
+            this.cardsGrid.innerHTML = '';
         }
     }
     
@@ -625,147 +644,18 @@ class DashboardApp {
     // CRIA AVISO COM CORES CICLICAS
     // ============================================
     criarAviso(aviso, indice) {
-        if (typeof this.desativarAvisoTeste !== 'function') {
-            console.warn('⚠️ desativarAvisoTeste não é uma função! Recarregue a página.');
-        }
-        
-        const urgente = this.isUrgente(aviso.quantidade);
-        
-        let corAviso;
-        if (urgente) {
-            corAviso = '#e74c3c'; // Vermelho fixo para urgentes
-        } else {
-            // Usa a próxima cor do ciclo
-            corAviso = this.proximaCorAviso();
-        }
-        
-        // Converte hex para RGB para usar no background com opacidade
-        const r = parseInt(corAviso.slice(1,3), 16);
-        const g = parseInt(corAviso.slice(3,5), 16);
-        const b = parseInt(corAviso.slice(5,7), 16);
-        const corRgb = `${r}, ${g}, ${b}`;
-        
-        const div = document.createElement('div');
-        div.className = `aviso-item ${urgente ? 'urgente' : ''}`;
-        div.style.setProperty('--aviso-color', corAviso);
-        div.style.background = `rgba(${corRgb}, 0.08)`;
-        div.style.animationDelay = `${indice * 0.06}s`;
-        div.setAttribute('tabindex', '0');
-        div.setAttribute('role', 'button');
-        div.setAttribute('aria-label', `${aviso.Mensagem}: ${aviso.DescricaoAviso} - Clique para abrir`);
-        div.title = `Clique para abrir: ${aviso.Mensagem}`;
-        
-        const quantidade = aviso.quantidade || 0;
-        const quantidadeFormatada = this.formatarQuantidade(quantidade);
-        const icone = urgente ? 'fa-exclamation-triangle' : this.obterIconeAviso(aviso.Mensagem);
-        
-        div.innerHTML = `
-            <div class="aviso-acoes">
-                <button class="aviso-abrir" title="Abrir aviso">
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-                <button class="aviso-desativar" title="Remover aviso">
-                    <i class="fas fa-minus"></i>
-                </button>
-                <button class="aviso-fechar" title="Fechar aviso">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="aviso-header">
-                <span class="aviso-icon" style="background: ${corAviso}">
-                    <i class="fas ${icone}"></i>
-                </span>
-                <span class="aviso-mensagem">${this.escapeHtml(aviso.Mensagem)}</span>
-            </div>
-            <div class="aviso-descricao">
-                <span class="aviso-qtd-destaque" style="color: ${corAviso}; background: rgba(${corRgb}, 0.1); border-color: rgba(${corRgb}, 0.15);">
-                    ${quantidadeFormatada}
-                </span>
-                <span class="aviso-descricao-texto">${this.escapeHtml(aviso.DescricaoAviso || '')}</span>
-            </div>
-        `;
-        
-        // Hover com a mesma cor
-        div.addEventListener('mouseenter', () => {
-            div.style.background = `rgba(${corRgb}, 0.14)`;
-        });
-        
-        div.addEventListener('mouseleave', () => {
-            div.style.background = `rgba(${corRgb}, 0.08)`;
-        });
-        
-        div.addEventListener('click', (e) => {
-            if (!e.target.closest('.aviso-abrir') && 
-                !e.target.closest('.aviso-fechar') && 
-                !e.target.closest('.aviso-desativar')) {
-                this.cliqueAviso(aviso);
-            }
-        });
-        
-        div.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.cliqueAviso(aviso);
-            }
-        });
-        
-        const btnAbrir = div.querySelector('.aviso-abrir');
-        if (btnAbrir) {
-            btnAbrir.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.cliqueAviso(aviso);
-            });
-        }
-        
-        const btnDesativar = div.querySelector('.aviso-desativar');
-        if (btnDesativar) {
-            btnDesativar.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.desativarAvisoTeste(div, aviso);
-            });
-        }
-        
-        const btnFechar = div.querySelector('.aviso-fechar');
-        if (btnFechar) {
-            btnFechar.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.fecharAviso(div, aviso);
-            });
-        }
-        
-        return div;
+        return this.avisoRenderer.criarAviso(aviso, indice);
     }
     
     // ============================================
     // FORMATAR QUANTIDADE PARA NÚMEROS GRANDES
     // ============================================
     formatarQuantidade(valor) {
-        if (valor == null || valor === undefined) return '0';
-        if (valor >= 1000000000) return (valor / 1000000000).toFixed(1) + 'B';
-        if (valor >= 1000000) return (valor / 1000000).toFixed(1) + 'M';
-        if (valor >= 1000) return (valor / 1000).toFixed(1) + 'K';
-        return String(valor);
+        return window.DashboardUtils?.formatarQuantidade(valor) ?? '0';
     }
 
     obterIconeAviso(mensagem) {
-        if (!mensagem) return 'fa-info-circle';
-        
-        const m = mensagem.toLowerCase();
-        
-        if (m.includes('estoque') || m.includes('produto')) return 'fa-box';
-        if (m.includes('cliente') || m.includes('pessoa')) return 'fa-user';
-        if (m.includes('venda') || m.includes('pedido')) return 'fa-shopping-cart';
-        if (m.includes('financeiro') || m.includes('conta') || m.includes('pagamento')) return 'fa-coins';
-        if (m.includes('fiscal') || m.includes('nota')) return 'fa-file-invoice';
-        if (m.includes('sistema') || m.includes('erro')) return 'fa-server';
-        if (m.includes('segurança') || m.includes('seguranca')) return 'fa-shield-alt';
-        if (m.includes('prazo') || m.includes('data')) return 'fa-calendar-alt';
-        if (m.includes('entrega') || m.includes('envio')) return 'fa-truck';
-        if (m.includes('qualidade') || m.includes('qualidad')) return 'fa-check-circle';
-        if (m.includes('produção') || m.includes('producao')) return 'fa-industry';
-        if (m.includes('recursos') || m.includes('pessoas')) return 'fa-users-cog';
-        
-        return 'fa-info-circle';
+        return window.DashboardUtils?.obterIconeAviso(mensagem) ?? 'fa-info-circle';
     }
 
     // ============================================
@@ -976,30 +866,69 @@ class DashboardApp {
             connectionStatus.innerHTML = '<i class="fas fa-circle" style="color:var(--accent-error)"></i><span>Bridge não carregado</span>';
         }
     }
+
+    obterNomeArquivoPdf() {
+        const dadosDashboard = window.DADOS_DASHBOARD || {};
+        const usuario = (dadosDashboard.usuario || 'usuario').toString().replace(/[^a-zA-Z0-9._-]/g, '_');
+        const empresa = (dadosDashboard.empresa || 'empresa').toString().replace(/[^a-zA-Z0-9._-]/g, '_');
+        const agora = new Date();
+        const dataHora = agora.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        })
+            .replace(/\//g, '-')
+            .replace(/:/g, '-')
+            .replace(/,/g, '')
+            .replace(/ /g, '_');
+
+        return `MLG Manager dashboard ${empresa}_${usuario}_${dataHora}.pdf`;
+    }
+
+    criarCabecalhoImpressao() {
+        const container = document.querySelector('.dashboard-container');
+        if (!container) return null;
+
+        this.removerCabecalhoImpressao();
+
+        const dadosDashboard = window.DADOS_DASHBOARD || {};
+        const empresa = dadosDashboard.empresa || 'Empresa não informada';
+        const usuario = dadosDashboard.usuario || 'Usuário não informado';
+        const dataHora = new Date().toLocaleString('pt-BR');
+
+        const header = document.createElement('div');
+        header.id = 'printReportHeader';
+        header.className = 'print-report-header';
+        header.innerHTML = `
+            <div class="print-report-title">MLG Manager Dashboard</div>
+            <div class="print-report-meta">
+                <span><strong>Empresa:</strong> ${this.escapeHtml(empresa)}</span>
+                <span><strong>Usuário:</strong> ${this.escapeHtml(usuario)}</span>
+                <span><strong>Data/Hora:</strong> ${this.escapeHtml(dataHora)}</span>
+            </div>
+        `;
+
+        container.insertBefore(header, container.firstChild);
+        return header;
+    }
+
+    removerCabecalhoImpressao() {
+        document.getElementById('printReportHeader')?.remove();
+    }
     
     gerarPDF() {
-        console.log('📄 Iniciando geração de PDF...');
+        console.log('📄 Iniciando geração de PDF via impressão...');
         
         if (window.delphiBridge) {
             window.delphiBridge.executar(0, 0, 'gerarPDF');
         }
-               
-        // Mostra loading
+        
         const loading = document.getElementById('pdfLoading');
         if (loading) loading.style.display = 'flex';
         
-        // Verifica se html2pdf está disponível
-        if (typeof html2pdf === 'undefined') {
-            console.warn('⚠️ html2pdf não encontrado, usando fallback via print');
-            this.mostrarFeedback('⚠️ Gerando PDF via impressão...');
-            setTimeout(() => {
-                if (loading) loading.style.display = 'none';
-                window.print();
-            }, 500);
-            return;
-        }
-        
-        // Clone do dashboard para não afetar a visualização atual
         const container = document.querySelector('.dashboard-container');
         if (!container) {
             console.error('❌ Container não encontrado');
@@ -1007,226 +936,64 @@ class DashboardApp {
             this.mostrarFeedback('❌ Erro: container não encontrado');
             return;
         }
-        
-        // Salva estado atual dos cards para restauração
-        const cardsOriginal = document.querySelector('.cards-grid')?.innerHTML || '';
-        
-        // Cria um container para o PDF
-        const pdfContainer = document.createElement('div');
-        pdfContainer.id = 'pdfContainer';
-        pdfContainer.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            transform: translateX(-120vw);
-            width: 210mm;
-            min-height: 297mm;
-            background: #ffffff;
-            padding: 20mm 15mm 15mm 15mm;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #1a1a2e;
-            z-index: 99998;
-            box-sizing: border-box;
-            opacity: 1;
-            pointer-events: none;
-            visibility: visible;
-            overflow: visible;
-        `;
-        
-        // HEADER DO PDF
-        const headerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 3px solid #6a6aff;">
-                <div>
-                    <h1 style="font-size: 20px; font-weight: 700; color: #1a1a2e; margin: 0 0 2px 0; letter-spacing: -0.5px;">
-                        📊 Dashboard
-                    </h1>
-                    <p style="font-size: 12px; color: #6c757d; margin: 0;">
-                        ${this.data?.usuario || 'Usuário'} • ${this.data?.empresa || 'Empresa'}
-                    </p>
-                </div>
-                <div style="text-align: right; font-size: 11px; color: #6c757d; line-height: 1.4;">
-                    <div style="font-weight: 600; color: #1a1a2e;">Gerado em:</div>
-                    <div>${new Date().toLocaleString('pt-BR', { 
-                        day: '2-digit', 
-                        month: '2-digit', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    })}</div>
-                </div>
-            </div>
-        `;
-        
-        // CARDS - Grid 4 colunas
-        const cardsAtuais = document.querySelectorAll('.dash-card');
-        let cardsHTML = '';
-        if (cardsAtuais.length > 0) {
-            cardsHTML = `
-                <div style="margin-bottom: 16px;">
-                    <h2 style="font-size: 14px; font-weight: 600; color: #1a1a2e; margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;">
-                        <span style="color: #6a6aff;">■</span> Indicadores
-                        <span style="font-size: 11px; font-weight: 400; color: #6c757d; margin-left: 6px;">(${cardsAtuais.length})</span>
-                    </h2>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                        ${Array.from(cardsAtuais).map(card => {
-                            const titulo = card.querySelector('.card-title')?.textContent || '';
-                            const valor = card.querySelector('.card-value')?.textContent || '0';
-                            const texto = card.querySelector('.card-text')?.textContent || '';
-                            const cor = card.style.getPropertyValue('--card-color') || '#6a6aff';
-                            const icone = card.querySelector('.card-icon i')?.className || 'fa fa-chart-bar';
-                            
-                            return `
-                                <div style="background: #f8f9fa; border-radius: 10px; padding: 12px 14px; border: 1px solid #e9ecef; border-top: 4px solid ${cor}; display: flex; flex-direction: column;">
-                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                                        <span style="width: 28px; height: 28px; border-radius: 8px; background: ${cor}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">
-                                            <i class="${icone}"></i>
-                                        </span>
-                                        <span style="font-size: 11px; font-weight: 600; color: #6c757d;">${this.escapeHtml(titulo)}</span>
-                                    </div>
-                                    <div style="font-size: 20px; font-weight: 900; color: #1a1a2e; line-height: 1.2;">${valor}</div>
-                                    ${texto ? `<div style="font-size: 11px; color: #6c757d; margin-top: 1px;">${this.escapeHtml(texto)}</div>` : ''}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
+
+        const modalHelp = document.getElementById('modalHelp');
+        const btnHelp = document.getElementById('btnHelp');
+        const helpEstavaAberto = modalHelp && modalHelp.style.display === 'flex';
+
+        this.criarCabecalhoImpressao();
+
+        if (modalHelp) {
+            modalHelp.style.display = 'none';
+            document.body.style.overflow = '';
         }
-        
-        // AVISOS - Lista
-        const avisosAtuais = document.querySelectorAll('.aviso-item');
-        let avisosHTML = '';
-        if (avisosAtuais.length > 0) {
-            const urgentes = document.querySelectorAll('.aviso-item.urgente').length;
-            avisosHTML = `
-                <div>
-                    <h2 style="font-size: 14px; font-weight: 600; color: #1a1a2e; margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;">
-                        <span style="color: #e74c3c;">■</span> Alertas & Avisos
-                        <span style="font-size: 11px; font-weight: 400; color: #6c757d; margin-left: 6px;">
-                            (${avisosAtuais.length}${urgentes > 0 ? ` • ${urgentes} urgentes` : ''})
-                        </span>
-                    </h2>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        ${Array.from(avisosAtuais).map(aviso => {
-                            const mensagem = aviso.querySelector('.aviso-mensagem')?.textContent || '';
-                            const descricao = aviso.querySelector('.aviso-descricao-texto')?.textContent || '';
-                            const qtd = aviso.querySelector('.aviso-qtd-destaque')?.textContent || '0';
-                            const isUrgente = aviso.classList.contains('urgente');
-                            const cor = aviso.style.getPropertyValue('--aviso-color') || (isUrgente ? '#e74c3c' : '#6a6aff');
-                            const icone = aviso.querySelector('.aviso-icon i')?.className || 'fa fa-info-circle';
-                            
-                            return `
-                                <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: ${isUrgente ? '#fff5f5' : '#f8f9fa'}; border-radius: 8px; border-left: 4px solid ${isUrgente ? '#e74c3c' : cor};">
-                                    <span style="width: 22px; height: 22px; border-radius: 6px; background: ${isUrgente ? '#e74c3c' : cor}; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; flex-shrink: 0;">
-                                        <i class="${icone}"></i>
-                                    </span>
-                                    <span style="font-size: 13px; font-weight: 700; color: ${isUrgente ? '#e74c3c' : '#1a1a2e'}; min-width: 30px;">${qtd}</span>
-                                    <span style="font-size: 12px; font-weight: 600; color: #1a1a2e; flex: 1;">${this.escapeHtml(mensagem)}</span>
-                                    <span style="font-size: 11px; color: #6c757d;">${this.escapeHtml(descricao)}</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
+
+        if (btnHelp) {
+            btnHelp.blur();
         }
-        
-        // FOOTER DO PDF
-        const footerHTML = `
-            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #e9ecef; display: flex; justify-content: space-between; font-size: 10px; color: #adb5bd;">
-                <span>Dashboard gerado automaticamente</span>
-                <span>Página 1/1</span>
-            </div>
-        `;
-        
-        // Monta o HTML completo
-        pdfContainer.innerHTML = headerHTML + cardsHTML + avisosHTML + footerHTML;
-        document.body.appendChild(pdfContainer);
-        
-        // Busca os ícones Font Awesome que não estão carregados
-        const linksFontAwesome = document.querySelectorAll('link[href*="font-awesome"]');
-        const linkFonts = document.querySelectorAll('link[href*="fonts.googleapis.com"]');
-        
-        // Adiciona os links de fonte no container do PDF
-        linksFontAwesome.forEach(link => {
-            if (!pdfContainer.querySelector(`link[href="${link.href}"]`)) {
-                const clone = link.cloneNode(true);
-                pdfContainer.appendChild(clone);
-            }
+
+        document.body.classList.add('pdf-print-mode');
+        container.classList.add('pdf-print-mode');
+
+        document.querySelectorAll('.section-header-right, .btn-pdf, .theme-toggle, .refresh-btn, .btn-help, .btn-gear, .btn-reset, .last-update-header, .modal-overlay, .pdf-loading, .click-feedback, .toast-notification').forEach(el => {
+            el.style.display = 'none';
         });
-        
-        linkFonts.forEach(link => {
-            if (!pdfContainer.querySelector(`link[href="${link.href}"]`)) {
-                const clone = link.cloneNode(true);
-                pdfContainer.appendChild(clone);
-            }
-        });
-        
-        // Garante que as fontes sejam carregadas
-        if (!pdfContainer.querySelector('link[href*="font-awesome"]')) {
-            const faLink = document.createElement('link');
-            faLink.rel = 'stylesheet';
-            faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-            pdfContainer.appendChild(faLink);
-        }
-        
-        // Pequeno delay para garantir que os estilos sejam aplicados
-        setTimeout(() => {
-            const opt = {
-                margin: 0,
-                filename: `dashboard_${this.formatarData()}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    onclone: function(doc) {
-                        const container = doc.getElementById('pdfContainer');
-                        if (container) {
-                            container.style.position = 'static';
-                            container.style.top = 'auto';
-                            container.style.left = 'auto';
-                            container.style.opacity = '1';
-                            container.style.pointerEvents = 'auto';
-                            container.style.visibility = 'visible';
-                            container.style.width = '210mm';
-                            container.style.minHeight = '297mm';
-                            container.style.overflow = 'visible';
-                        }
-                    }
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'portrait',
-                    compress: true
+
+        this.mostrarFeedback('🖨️ Abrindo layout de impressão do dashboard...');
+
+        const nomeArquivoPdf = this.obterNomeArquivoPdf();
+        const tituloOriginal = document.title;
+        document.title = nomeArquivoPdf;
+
+        const restaurarInterface = () => {
+            document.body.classList.remove('pdf-print-mode');
+            container.classList.remove('pdf-print-mode');
+            document.querySelectorAll('.section-header-right, .btn-pdf, .theme-toggle, .refresh-btn, .btn-help, .btn-gear, .btn-reset, .last-update-header, .modal-overlay, .pdf-loading, .click-feedback, .toast-notification').forEach(el => {
+                el.style.display = '';
+            });
+            if (modalHelp) {
+                if (helpEstavaAberto) {
+                    modalHelp.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    modalHelp.style.display = 'none';
+                    document.body.style.overflow = '';
                 }
-            };
-            
-            html2pdf()
-                .set(opt)
-                .from(pdfContainer)
-                .save()
-                .then(() => {
-                    console.log('✅ PDF gerado com sucesso!');
-                    this.mostrarFeedback('✅ PDF gerado com sucesso!');
-                    document.body.removeChild(pdfContainer);
-                    if (loading) loading.style.display = 'none';
-                })
-                .catch(erro => {
-                    console.error('❌ Erro ao gerar PDF:', erro);
-                    this.mostrarFeedback('❌ Erro ao gerar PDF. Tentando fallback...');
-                    document.body.removeChild(pdfContainer);
-                    
-                    // Fallback: tenta print
-                    setTimeout(() => {
-                        if (loading) loading.style.display = 'none';
-                        window.print();
-                    }, 500);
-                });
-        }, 500);
+            }
+            this.removerCabecalhoImpressao();
+            document.title = tituloOriginal;
+            if (loading) loading.style.display = 'none';
+        };
+
+        const finalizarImpressao = () => {
+            setTimeout(restaurarInterface, 300);
+        };
+
+        window.addEventListener('afterprint', finalizarImpressao, { once: true });
+
+        setTimeout(() => {
+            window.print();
+        }, 300);
     }        
 
     // ============================================
@@ -1237,7 +1004,7 @@ class DashboardApp {
         
         const opcoesFallback = {
             margin: 10,
-            filename: `dashboard_${this.formatarData()}.pdf`,
+            filename: this.obterNomeArquivoPdf(),
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { 
                 scale: 1.5,
@@ -1304,73 +1071,27 @@ class DashboardApp {
     }
 
     formatarData() {
-        const agora = new Date();
-        const ano = agora.getFullYear();
-        const mes = String(agora.getMonth() + 1).padStart(2, '0');
-        const dia = String(agora.getDate()).padStart(2, '0');
-        const hora = String(agora.getHours()).padStart(2, '0');
-        const min = String(agora.getMinutes()).padStart(2, '0');
-        const seg = String(agora.getSeconds()).padStart(2, '0');
-        
-        return `${ano}${mes}${dia}_${hora}${min}${seg}`;
+        return window.DashboardUtils?.formatarData() || '';
     }
     
     obterIcone(titulo) {
-        if (!titulo) return this.mapaIcones.default;
-        for (const [k, v] of Object.entries(this.mapaIcones)) {
-            if (titulo.toLowerCase().includes(k.toLowerCase())) return v;
-        }
-        return this.mapaIcones.default;
+        return window.DashboardUtils?.obterIcone(titulo, this.mapaIcones) || this.mapaIcones.default;
     }
     
     obterBadge(valor, titulo) {
-        if (!titulo) return null;
-        
-        const t = titulo.toLowerCase();
-        
-        if (t.includes('hoje')) return 'HOJE';
-        if (t.includes('ontem')) return 'ONTEM';
-        if (t.includes('semana')) return 'SEMANAL';
-        if (t.includes('mês') || t.includes('mes')) return 'MENSAL';
-        if (t.includes('ano')) return 'ANUAL';
-        
-        if (t.includes('pendente')) return 'PENDENTE';
-        if (t.includes('atraso') || t.includes('atrasado')) return 'ATRASADO';
-        if (t.includes('vencido') || t.includes('vencendo')) return 'VENCIDO';
-        if (t.includes('cancelado')) return 'CANCELADO';
-        if (t.includes('concluído') || t.includes('concluido')) return 'CONCLUÍDO';
-        if (t.includes('aprovado')) return 'APROVADO';
-        
-        if (t.includes('estoque')) return 'ESTOQUE';
-        if (t.includes('venda')) return 'VENDAS';
-        if (t.includes('cliente')) return 'CLIENTES';
-        if (t.includes('financeiro') || t.includes('conta')) return 'FINANCEIRO';
-        if (t.includes('fiscal') || t.includes('nota')) return 'FISCAL';
-        if (t.includes('pedido')) return 'PEDIDOS';
-        
-        if (t.includes('urgente')) return 'URGENTE';
-        if (t.includes('crítico') || t.includes('critico')) return 'CRÍTICO';
-        if (t.includes('atenção') || t.includes('atencao')) return 'ATENÇÃO';
-        
-        return null;
+        return window.DashboardUtils?.obterBadge(valor, titulo) ?? null;
     }
     
     formatarNumero(valor) {
-        if (valor == null) return '0';
-        return valor >= 1000 ? valor.toLocaleString('pt-BR') : String(valor);
+        return window.DashboardUtils?.formatarNumero(valor) ?? '0';
     }
     
     formatarMoeda(valor) {
-        if (!valor) return 'R$ 0,00';
-        if (valor < 1) return String(valor);
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+        return window.DashboardUtils?.formatarMoeda(valor) ?? 'R$ 0,00';
     }
     
     escapeHtml(texto) {
-        if (!texto) return '';
-        const d = document.createElement('div');
-        d.textContent = texto;
-        return d.innerHTML;
+        return window.DashboardUtils?.escapeHtml(texto) ?? '';
     }
     
     mostrarFeedback(msg) {
@@ -1394,18 +1115,10 @@ class DashboardApp {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM carregado, inicializando DashboardApp...');
+    console.log(`🏷️ Dashboard ID: ${window.__DASHBOARD_ID || 'default'}`);
+    console.log(`📁 Arquivo de dados: ${window.__DASHBOARD_DATA_FILE || 'desconhecido'}`);
     window.dashboardApp = new DashboardApp();
-    // Drain any calls that were queued before the full initialization
-    if (window._queuedProcessarDados && window._queuedProcessarDados.length) {
-        window._queuedProcessarDados.forEach(d => {
-            try { window.dashboardApp.processarDados(d); } catch (e) { console.error(e); }
-        });
-        window._queuedProcessarDados = [];
-    }
-    if (window._queuedCarregarDados) {
-        try { window.dashboardApp.carregarDados(); } catch (e) { console.error(e); }
-        window._queuedCarregarDados = false;
-    }
 });
 
 // ============================================
@@ -1413,13 +1126,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 
 function atualizarDados(dados) {
+    console.log('🔄 Função global atualizarDados chamada pelo Delphi');
     if (window.dashboardApp) {
         window.dashboardApp.processarDados(dados);
+    } else {
+        console.warn('⚠️ dashboardApp não inicializado');
     }
 }
 
 function recarregarDataJson() {
+    console.log('🔄 Função global recarregarDataJson chamada');
     if (window.dashboardApp) {
         window.dashboardApp.carregarDados();
+    } else {
+        console.warn('⚠️ dashboardApp não inicializado');
     }
 }
