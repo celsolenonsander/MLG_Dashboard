@@ -177,29 +177,3 @@ Cores dos Avisos
 
     Os ícones são mapeados por palavras-chave no título do card. Ajuste o mapaIcones em app.js para novos mapeamentos.
 
-🤝 Contribuição
-
-Contribuições são bem-vindas! Siga os passos:
-
-    Faça um fork do projeto.
-
-    Crie uma branch para sua feature (git checkout -b feature/nova-feature).
-
-    Commit suas alterações (git commit -m 'Adiciona nova feature').
-
-    Push para a branch (git push origin feature/nova-feature).
-
-    Abra um Pull Request.
-
-📄 Licença
-
-Este projeto está sob a licença MIT. Consulte o arquivo LICENSE para mais detalhes.
-👨‍💻 Autor
-
-Desenvolvido para integração com sistemas Delphi.
-Última atualização: 09/07/2026
-📬 Contato
-
-Para dúvidas ou sugestões, entre em contato através do repositório ou via e-mail.
-
-Dashboard v5.0 – Sistema Integrado com Delphi 🚀
